@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Locker — Secure API Key Manager for Developers</title>
+  <meta name="description" content="Store, organize and auto-suggest your API keys right in the browser. AES-256 encrypted. Zero cloud. Smart site detection." />
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" href="icon.png" type="image/png" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0a;
+      --bg2:       #111111;
+      --bg3:       #181818;
+      --border:    #222222;
+      --indigo:    #6366f1;
+      --indigo-lt: #818cf8;
+      --indigo-dk: #4f52c9;
+      --text:      #f0f0f0;
+      --text2:     #999999;
+      --text3:     #555555;
+      --green:     #22c55e;
+      --radius:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ─────────────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      height: 64px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 17px; color: var(--text);
+    }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 8px; }
+
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a {
+      font-size: 14px; color: var(--text2);
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 20px; border-radius: 8px; font-size: 14px;
+      font-weight: 600; cursor: pointer; border: none;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-primary { background: var(--indigo); color: #fff; }
+    .btn-outline {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--indigo); color: var(--indigo-lt); }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+
+    /* ── HERO ────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 100px 5% 80px;
+      position: relative; overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 999px;
+      border: 1px solid rgba(99,102,241,.4);
+      background: rgba(99,102,241,.08);
+      font-size: 13px; color: var(--indigo-lt);
+      margin-bottom: 28px;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    h1 {
+      font-size: clamp(36px, 5.5vw, 64px);
+      font-weight: 800; line-height: 1.12;
+      letter-spacing: -1.5px;
+      max-width: 800px; margin: 0 auto 20px;
+    }
+    h1 span { color: var(--indigo-lt); }
+
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text2); max-width: 540px;
+      margin: 0 auto 40px; line-height: 1.7;
+    }
+
+    .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px; }
+
+    /* Browser mockup */
+    .browser-mockup {
+      max-width: 720px; margin: 0 auto;
+      border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 1px rgba(99,102,241,.1);
+    }
+
+    .browser-bar {
+      background: var(--bg3); padding: 12px 16px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .browser-dot:nth-child(1) { background: #ff5f57; }
+    .browser-dot:nth-child(2) { background: #febc2e; }
+    .browser-dot:nth-child(3) { background: #28c840; }
+    .browser-url {
+      flex: 1; background: var(--bg2); border-radius: 6px;
+      padding: 5px 12px; font-size: 12px; color: var(--text2);
+      margin: 0 12px; text-align: left;
+    }
+
+    .browser-content {
+      background: var(--bg2); padding: 28px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    /* Popup preview cards */
+    .popup-preview {
+      background: #141414; border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      width: 280px; margin: 0 auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    }
+    .popup-header {
+      background: var(--bg3); padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .popup-header-icon {
+      width: 24px; height: 24px; border-radius: 6px;
+      background: var(--indigo); display: flex; align-items: center;
+      justify-content: center; font-size: 14px;
+    }
+    .popup-title { font-size: 13px; font-weight: 700; }
+    .popup-body { padding: 8px 0; }
+    .popup-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 16px; gap: 12px;
+    }
+    .popup-row:not(:last-child) { border-bottom: 1px solid #1a1a1a; }
+    .popup-label { font-size: 12px; font-weight: 600; color: #c0c0c0; }
+    .popup-value { font-size: 11px; color: #555; font-family: monospace; margin-top: 2px; }
+    .pill {
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600;
+      background: var(--indigo); color: #fff; white-space: nowrap;
+    }
+
+    /* Site banner preview */
+    .site-banner-preview {
+      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25);
+      border-radius: 8px; padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--indigo-lt);
+    }
+
+    /* ── LOGOS ───────────────────────────────────────────────────────── */
+    .logos-section {
+      padding: 48px 5%;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .logos-label { font-size: 13px; color: var(--text3); margin-bottom: 20px; letter-spacing: .05em; text-transform: uppercase; }
+    .logos-grid {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      justify-content: center; align-items: center;
+    }
+    .provider-logo {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 14px; border-radius: 8px;
+      background: var(--bg2); border: 1px solid var(--border);
+      font-size: 13px; color: var(--text2);
+      transition: border-color .2s, color .2s;
+    }
+    .provider-logo:hover { border-color: var(--indigo); color: var(--text); }
+    .provider-logo img { width: 18px; height: 18px; border-radius: 4px; background:#fff; object-fit:contain; }
+
+    /* ── FEATURES ────────────────────────────────────────────────────── */
+    section { padding: 96px 5%; }
+    .section-label {
+      font-size: 13px; color: var(--indigo-lt); font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h2 {
+      font-size: clamp(28px, 3.5vw, 42px);
+      font-weight: 800; line-height: 1.2;
+      letter-spacing: -0.8px; margin-bottom: 16px;
+    }
+    .section-sub { color: var(--text2); font-size: 17px; max-width: 520px; margin-bottom: 56px; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: rgba(99,102,241,.4); transform: translateY(-3px); }
+
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 18px;
+    }
+    .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+    /* ── HOW IT WORKS ────────────────────────────────────────────────── */
+    .how-section { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 40px; margin-top: 56px;
+    }
+    .step { position: relative; }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--indigo); display: flex; align-items: center;
+      justify-content: center; font-size: 14px; font-weight: 800;
+      margin-bottom: 16px;
+    }
+    .step-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .step-desc { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+    /* ── SECURITY ────────────────────────────────────────────────────── */
+    .security-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    @media(max-width: 640px) { .security-grid { grid-template-columns: 1fr; } }
+
+    .security-item {
+      display: flex; gap: 14px; padding: 20px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .security-ico { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .security-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .security-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+    /* ── PRICING ─────────────────────────────────────────────────────── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px; margin-top: 56px;
+    }
+
+    .pricing-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 32px;
+      position: relative;
+    }
+    .pricing-card.popular {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 1px var(--indigo), 0 20px 60px rgba(99,102,241,.15);
+    }
+    .popular-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: var(--indigo); color: #fff;
+      padding: 3px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      white-space: nowrap;
+    }
+    .plan-name { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+    .plan-price {
+      font-size: 40px; font-weight: 800; letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+    .plan-price span { font-size: 16px; font-weight: 500; color: var(--text2); }
+    .plan-desc { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .plan-features li {
+      font-size: 14px; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .plan-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .plan-features li.no::before { content: '✕'; color: var(--text3); }
+
+    /* ── WAITLIST ────────────────────────────────────────────────────── */
+    .waitlist-section {
+      text-align: center;
+      background: linear-gradient(135deg, rgba(99,102,241,.08) 0%, rgba(99,102,241,.02) 100%);
+      border-top: 1px solid rgba(99,102,241,.15);
+    }
+    .waitlist-form {
+      display: flex; gap: 10px; justify-content: center;
+      flex-wrap: wrap; margin-top: 32px;
+    }
+    .waitlist-form input {
+      padding: 13px 18px; border-radius: 8px;
+      background: var(--bg2); border: 1px solid var(--border);
+      color: var(--text); font-size: 15px; width: 300px;
+      transition: border-color .2s;
+      outline: none;
+    }
+    .waitlist-form input:focus { border-color: var(--indigo); }
+    .waitlist-form input::placeholder { color: var(--text3); }
+    .waitlist-note { font-size: 13px; color: var(--text3); margin-top: 14px; }
+
+    /* ── FOOTER ──────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-left { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text2); }
+    .footer-left img { width: 24px; height: 24px; border-radius: 6px; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text3); transition: color .2s; }
+    .footer-links a:hover { color: var(--text2); }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 72px 5% 56px; }
+      section { padding: 64px 5%; }
+      footer { flex-direction: column; text-align: center; }
+    }
+
+    /* ── TOAST (waitlist confirm) ────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; border: 1px solid var(--green);
+      color: var(--green); padding: 12px 24px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      opacity: 0; transition: opacity .3s; pointer-events: none;
+      white-space: nowrap; z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">
+    <img src="icon128.png" alt="API Locker" />
+    API Locker
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#security">Security</a>
+    <a href="#pricing">Pricing</a>
+  </div>
+  <a class="btn btn-primary" href="#waitlist">
+    🔐 Get Early Access
+  </a>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="badge">
+    <span class="badge-dot"></span>
+    Now in Beta — Free Early Access
+  </div>
+
+  <h1>Your API Keys,<br /><span>Organized & Secure</span></h1>
+
+  <p class="hero-sub">
+    The Chrome extension that stores your API keys with military-grade encryption,
+    then auto-suggests them when you visit the right site.
+  </p>
+
+  <div class="hero-cta">
+    <a class="btn btn-primary btn-lg" href="#waitlist">
+      🔐 Get Early Access — Free
+    </a>
+    <a class="btn btn-outline btn-lg" href="#how">
+      See how it works ↓
+    </a>
+  </div>
+
+  <!-- Browser + popup mockup -->
+  <div class="browser-mockup">
+    <div class="browser-bar">
+      <div class="browser-dot"></div>
+      <div class="browser-dot"></div>
+      <div class="browser-dot"></div>
+      <div class="browser-url">platform.openai.com/api-keys</div>
+    </div>
+    <div class="browser-content">
+      <div class="site-banner-preview">
+        <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=64" width="18" height="18" style="border-radius:4px;background:#fff;" />
+        <span>You're on <strong>OpenAI</strong> — 2 keys saved in API Locker</span>
+      </div>
+
+      <div class="popup-preview">
+        <div class="popup-header">
+          <div class="popup-header-icon">🔐</div>
+          <div class="popup-title">OpenAI Keys</div>
+        </div>
+        <div class="popup-body">
+          <div class="popup-row">
+            <div>
+              <div class="popup-label">Production</div>
+              <div class="popup-value">sk-pro••••••••j0A</div>
+            </div>
+            <div class="pill">Copy</div>
+          </div>
+          <div class="popup-row">
+            <div>
+              <div class="popup-label">Development</div>
+              <div class="popup-value">sk-dev••••••••G0A</div>
+            </div>
+            <div class="pill">Copy</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PROVIDER LOGOS ────────────────────────────────────────────────────── -->
+<div class="logos-section">
+  <div class="logos-label">Supports 32+ API Providers</div>
+  <div class="logos-grid" id="providers-grid">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="section-label">Features</div>
+  <h2>Everything you need,<br />nothing you don't</h2>
+  <p class="section-sub">Built for developers who are tired of hunting for API keys across 10 different browser tabs.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-title">Smart Site Detection</div>
+      <div class="feature-desc">
+        Visit platform.openai.com? API Locker instantly shows your OpenAI keys.
+        Goes to Stripe dashboard? Your Stripe keys appear. Zero manual searching.
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏢</div>
+      <div class="feature-title">Provider Logos & Grouping</div>
+      <div class="feature-desc">
+        Each key is tagged with its provider's logo and name. 32+ providers supported —
+        OpenAI, Anthropic, AWS, Stripe, GitHub, Supabase and more.
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">One-Click Copy</div>
+      <div class="feature-desc">
+        Keys masked by default for security. Click Copy and the full key goes
+        straight to your clipboard — no popup, no searching, no friction.
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📦</div>
+      <div class="feature-title">Multiple Keys Per Provider</div>
+      <div class="feature-desc">
+        Label your keys (Production, Development, Client A...) and store as many
+        as you need for the same provider. Switch between them instantly.
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <div class="feature-title">Expiry Reminders</div>
+      <div class="feature-desc">
+        Set an expiry date on any key. Get warned 14 days before it expires —
+        and see expired keys highlighted in red so nothing slips through.
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💾</div>
+      <div class="feature-title">Import & Export</div>
+      <div class="feature-desc">
+        Back up your entire vault to a JSON file. Restore it on any device instantly.
+        Migrate between computers without re-entering everything manually.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────────────── -->
+<section id="how" class="how-section">
+  <div class="section-label">How It Works</div>
+  <h2>Up and running in 60 seconds</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Install & Set Master Password</div>
+      <div class="step-desc">
+        Add API Locker from the Chrome Web Store. Choose a strong master password —
+        this is the only password you'll ever need to remember.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Add Your API Keys</div>
+      <div class="step-desc">
+        Select a provider, paste your key, add a label like "Production" or "Client A".
+        Optional: set an expiry date. Done in 5 seconds per key.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Auto-Suggest on Every Site</div>
+      <div class="step-desc">
+        Visit any supported API dashboard and your keys appear automatically.
+        Click Copy. Paste. That's it. Never search for an API key again.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECURITY ──────────────────────────────────────────────────────────── -->
+<section id="security">
+  <div class="section-label">Security</div>
+  <h2>Zero-knowledge.<br />Zero-cloud.</h2>
+  <p class="section-sub">
+    Your keys never leave your device. We never see them — not even encrypted.
+  </p>
+
+  <div class="security-grid">
+    <div class="security-item">
+      <div class="security-ico">🔐</div>
+      <div>
+        <div class="security-title">AES-256-GCM Encryption</div>
+        <div class="security-desc">Every key is encrypted with AES-256-GCM, the same standard used by governments and financial institutions.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-ico">🧂</div>
+      <div>
+        <div class="security-title">PBKDF2 Key Derivation</div>
+        <div class="security-desc">Your master password goes through 100,000 iterations of PBKDF2 before becoming an encryption key. Brute-force resistant.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-ico">💻</div>
+      <div>
+        <div class="security-title">100% Local Storage</div>
+        <div class="security-desc">Everything stays in chrome.storage.local on your machine. No servers, no accounts, no internet connection required.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-ico">🚫</div>
+      <div>
+        <div class="security-title">No Telemetry, No Tracking</div>
+        <div class="security-desc">We collect zero data about you or your keys. No analytics, no usage tracking, no crash reports sent anywhere.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ───────────────────────────────────────────────────────────── -->
+<section id="pricing" style="background: var(--bg2); border-top: 1px solid var(--border);">
+  <div style="text-align:center;">
+    <div class="section-label" style="justify-content:center;display:block;">Pricing</div>
+    <h2>Simple, honest pricing</h2>
+    <p class="section-sub" style="margin: 0 auto 0;">
+      Start free. Upgrade when you need more.
+    </p>
+  </div>
+
+  <div class="pricing-grid">
+    <!-- Free -->
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0</div>
+      <div class="plan-desc">Perfect for getting started</div>
+      <ul class="plan-features">
+        <li>Up to 10 API keys</li>
+        <li>All 32+ providers</li>
+        <li>Smart site detection</li>
+        <li>Import & export</li>
+        <li>Expiry reminders</li>
+        <li class="no">Cloud sync</li>
+        <li class="no">Team sharing</li>
+      </ul>
+      <a class="btn btn-outline" href="#waitlist" style="width:100%;justify-content:center;">Get Started Free</a>
+    </div>
+
+    <!-- Pro -->
+    <div class="pricing-card popular">
+      <div class="popular-badge">⭐ Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$5.99 <span>/ month</span></div>
+      <div class="plan-desc">For power users & freelancers</div>
+      <ul class="plan-features">
+        <li>Unlimited API keys</li>
+        <li>All 32+ providers</li>
+        <li>Smart site detection</li>
+        <li>Import & export</li>
+        <li>Expiry reminders</li>
+        <li>Cloud sync (coming soon)</li>
+        <li class="no">Team sharing</li>
+      </ul>
+      <a class="btn btn-primary" href="#waitlist" style="width:100%;justify-content:center;">Join Pro Waitlist</a>
+    </div>
+
+    <!-- Team -->
+    <div class="pricing-card">
+      <div class="plan-name">Team</div>
+      <div class="plan-price">$9.99 <span>/ user / mo</span></div>
+      <div class="plan-desc">For dev teams & agencies</div>
+      <ul class="plan-features">
+        <li>Everything in Pro</li>
+        <li>Shared team vaults</li>
+        <li>Role-based access</li>
+        <li>Key-level permissions</li>
+        <li>Email invite system</li>
+        <li>Cloud sync</li>
+        <li>Priority support</li>
+      </ul>
+      <a class="btn btn-outline" href="#waitlist" style="width:100%;justify-content:center;">Join Team Waitlist</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── WAITLIST ──────────────────────────────────────────────────────────── -->
+<section id="waitlist" class="waitlist-section">
+  <div class="section-label" style="display:block;">Early Access</div>
+  <h2>Be first in line</h2>
+  <p class="section-sub" style="margin: 0 auto;">
+    API Locker is launching soon on the Chrome Web Store.
+    Join the waitlist and get <strong style="color:var(--indigo-lt);">3 months of Pro free</strong> when we launch.
+  </p>
+
+  <form class="waitlist-form" id="waitlist-form">
+    <input type="email" placeholder="your@email.com" required id="waitlist-email" />
+    <button type="submit" class="btn btn-primary btn-lg">🚀 Get Early Access</button>
+  </form>
+  <div class="waitlist-note">No spam. Unsubscribe anytime. We hate spam as much as you do.</div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-left">
+    <img src="icon128.png" alt="API Locker" />
+    <span>API Locker © 2026</span>
+  </div>
+  <div class="footer-links">
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms</a>
+    <a href="mailto:hello@apilocker.dev">Contact</a>
+    <a href="#">GitHub</a>
+  </div>
+</footer>
+
+<div id="toast">✅ You're on the list! We'll be in touch.</div>
+
+<script>
+  // Provider logos grid
+  const PROVIDERS = [
+    { name: 'OpenAI',       domain: 'openai.com' },
+    { name: 'Anthropic',    domain: 'anthropic.com' },
+    { name: 'Google AI',    domain: 'google.com' },
+    { name: 'Groq',         domain: 'groq.com' },
+    { name: 'Mistral',      domain: 'mistral.ai' },
+    { name: 'Stripe',       domain: 'stripe.com' },
+    { name: 'AWS',          domain: 'aws.amazon.com' },
+    { name: 'GitHub',       domain: 'github.com' },
+    { name: 'Supabase',     domain: 'supabase.com' },
+    { name: 'Cloudflare',   domain: 'cloudflare.com' },
+    { name: 'Vercel',       domain: 'vercel.com' },
+    { name: 'Notion',       domain: 'notion.so' },
+    { name: 'Twilio',       domain: 'twilio.com' },
+    { name: 'SendGrid',     domain: 'sendgrid.com' },
+    { name: 'Pinecone',     domain: 'pinecone.io' },
+    { name: 'Hugging Face', domain: 'huggingface.co' },
+    { name: 'Replicate',    domain: 'replicate.com' },
+    { name: 'Together AI',  domain: 'together.ai' },
+    { name: 'Cohere',       domain: 'cohere.com' },
+    { name: 'Perplexity',   domain: 'perplexity.ai' },
+  ];
+
+  const grid = document.getElementById('providers-grid');
+  PROVIDERS.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'provider-logo';
+    el.innerHTML = `<img src="https://www.google.com/s2/favicons?domain=${p.domain}&sz=64" alt="${p.name}" onerror="this.style.display='none'" />${p.name}`;
+    grid.appendChild(el);
+  });
+
+  // Waitlist form
+  document.getElementById('waitlist-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const email = document.getElementById('waitlist-email').value;
+    // TODO: connect to Mailchimp / Formspree / Notion DB
+    console.log('Waitlist signup:', email);
+
+    const toast = document.getElementById('toast');
+    toast.style.opacity = '1';
+    setTimeout(() => toast.style.opacity = '0', 3500);
+
+    this.reset();
+  });
+</script>
+</body>
+</html>
