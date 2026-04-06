@@ -602,9 +602,20 @@
   <div style="text-align:center;">
     <div class="section-label" style="justify-content:center;display:block;">Pricing</div>
     <h2>Simple, honest pricing</h2>
-    <p class="section-sub" style="margin: 0 auto 0;">
+    <p class="section-sub" style="margin: 0 auto 12px;">
       Start free. Upgrade when you need more.
     </p>
+    <!-- Billing Toggle -->
+    <div style="display:inline-flex;align-items:center;gap:0;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:4px;margin-bottom:32px;">
+      <button id="toggle-monthly" onclick="setBilling('monthly')"
+        style="padding:8px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:var(--indigo);color:#fff;">
+        Monthly
+      </button>
+      <button id="toggle-yearly" onclick="setBilling('yearly')"
+        style="padding:8px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#888;">
+        Yearly <span style="font-size:11px;background:#22c55e20;color:#4ade80;border-radius:4px;padding:2px 6px;margin-left:4px;">Save 50%</span>
+      </button>
+    </div>
   </div>
 
   <div class="pricing-grid">
@@ -625,11 +636,11 @@
       <a class="btn btn-outline" href="https://chromewebstore.google.com/detail/api-locker/bboonagjhicfibepbielmaiphgchhpeb" target="_blank" style="width:100%;justify-content:center;">Install Free</a>
     </div>
 
-    <!-- Pro Monthly -->
+    <!-- Pro -->
     <div class="pricing-card popular">
       <div class="popular-badge">⭐ Most Popular</div>
       <div class="plan-name">Pro</div>
-      <div class="plan-price">£4.49 <span>/ month</span></div>
+      <div id="pro-price" class="plan-price">£4.49 <span>/ month</span></div>
       <div class="plan-desc">For power users & freelancers</div>
       <ul class="plan-features">
         <li>Unlimited API keys</li>
@@ -640,8 +651,8 @@
         <li>Cloud sync ☁</li>
         <li class="no">Team sharing</li>
       </ul>
-      <a class="btn btn-primary" href="https://leonoglobal.lemonsqueezy.com/checkout/buy/961c09e7-9dbb-4d4e-9fc4-f2e498fe2a66" style="width:100%;justify-content:center;margin-bottom:10px;">Get Pro Monthly</a>
-      <a class="btn btn-outline" href="https://leonoglobal.lemonsqueezy.com/checkout/buy/fc9869dd-5ae6-4d44-b8ea-abb558ea4ae9" style="width:100%;justify-content:center;font-size:13px;">🔥 Lifetime Deal — £21.99</a>
+      <a id="pro-main-btn" class="btn btn-primary" href="https://leonoglobal.lemonsqueezy.com/checkout/buy/961c09e7-9dbb-4d4e-9fc4-f2e498fe2a66" target="_blank" style="width:100%;justify-content:center;margin-bottom:10px;">Get Pro Monthly</a>
+      <a class="btn btn-outline" href="https://leonoglobal.lemonsqueezy.com/checkout/buy/fc9869dd-5ae6-4d44-b8ea-abb558ea4ae9" target="_blank" style="width:100%;justify-content:center;font-size:13px;">🔥 Lifetime Deal — £39.99</a>
     </div>
 
     <!-- Team -->
@@ -658,10 +669,37 @@
         <li>Cloud sync ☁</li>
         <li>Priority support</li>
       </ul>
-      <a class="btn btn-outline" href="https://formspree.io/f/mykblebl" style="width:100%;justify-content:center;opacity:0.7;cursor:default;" onclick="event.preventDefault();document.querySelector('#newsletter-form input').focus();">🔔 Join Waitlist</a>
+      <a class="btn btn-outline" style="width:100%;justify-content:center;opacity:0.7;cursor:default;" onclick="event.preventDefault();document.querySelector('#newsletter-form input').focus();">🔔 Join Waitlist</a>
     </div>
   </div>
 </section>
+
+<script>
+function setBilling(type) {
+  const monthlyBtn = document.getElementById('toggle-monthly');
+  const yearlyBtn  = document.getElementById('toggle-yearly');
+  const proPrice   = document.getElementById('pro-price');
+  const proMainBtn = document.getElementById('pro-main-btn');
+
+  if (type === 'yearly') {
+    monthlyBtn.style.background = 'transparent';
+    monthlyBtn.style.color = '#888';
+    yearlyBtn.style.background = 'var(--indigo)';
+    yearlyBtn.style.color = '#fff';
+    proPrice.innerHTML = '£26.99 <span>/ year</span>';
+    proMainBtn.href = 'https://leonoglobal.lemonsqueezy.com/checkout/buy/fda2a0eb-cf43-4920-a8cf-314bf0f2bd76';
+    proMainBtn.textContent = 'Get Pro Yearly';
+  } else {
+    monthlyBtn.style.background = 'var(--indigo)';
+    monthlyBtn.style.color = '#fff';
+    yearlyBtn.style.background = 'transparent';
+    yearlyBtn.style.color = '#888';
+    proPrice.innerHTML = '£4.49 <span>/ month</span>';
+    proMainBtn.href = 'https://leonoglobal.lemonsqueezy.com/checkout/buy/961c09e7-9dbb-4d4e-9fc4-f2e498fe2a66';
+    proMainBtn.textContent = 'Get Pro Monthly';
+  }
+}
+</script>
 
 <!-- ── INSTALL CTA ─────────────────────────────────────────────────────── -->
 <section id="waitlist" class="waitlist-section">
