@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Key Leak Checker — Find Out How Risky Your Key Is | API Locker</title>
+  <meta name="description" content="Enter the first 4-6 characters of your API key to identify the provider and see your risk level. Free, 100% client-side — we never store or transmit anything." />
+  <link rel="canonical" href="https://apilocker.dev/check" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8G5WKVX81T"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8G5WKVX81T');
+  </script>
+
+  <!-- SoftwareApplication Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "API Key Leak Checker",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Web",
+    "url": "https://apilocker.dev/check",
+    "description": "A free browser-side tool that identifies which API provider a key belongs to and assesses exposure risk based on the key prefix. No data is sent to any server.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "API Locker",
+      "url": "https://apilocker.dev"
+    }
+  }
+  </script>
+
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is it safe to enter my API key prefix here?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. This tool runs entirely in your browser — no data is sent to any server. We only ask for the first 4-6 characters (the public prefix), which is not enough for anyone to use your key. The prefix just tells us which provider issued it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does 'risk level' mean?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Risk level reflects how severe the consequences would be if this key were exposed publicly. Critical means real money or repository access is at stake (AWS, Stripe Live, GitHub). High means a third-party can rack up API charges or send messages on your behalf. Medium means limited blast radius with proper scoping. Low means test/sandbox keys with no real-world impact."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What should I do if my API key has been exposed?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Revoke it immediately from the provider dashboard, then generate a new one. If it was committed to a public Git repository, assume it has already been scraped — bots scan GitHub in real time. Check your provider's usage logs for any unauthorized calls, and report suspicious activity to the provider."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where should I store my API keys safely?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "For personal use: an encrypted vault like API Locker (browser extension, AES-256-GCM, local-first). For production apps: environment variables injected at runtime via your CI/CD platform, or a secrets manager like AWS Secrets Manager or HashiCorp Vault. Never hardcode keys in source code or store them in unencrypted text files."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="icon" href="icon.png" type="image/png" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0a;
+      --bg2:       #111111;
+      --bg3:       #181818;
+      --border:    #222222;
+      --indigo:    #6366f1;
+      --indigo-lt: #818cf8;
+      --indigo-dk: #4f52c9;
+      --text:      #f0f0f0;
+      --text2:     #999999;
+      --text3:     #555555;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --orange:    #f97316;
+      --yellow:    #eab308;
+      --radius:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      height: 64px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 17px; color: var(--text);
+    }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 8px; }
+
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a { font-size: 14px; color: var(--text2); transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 20px; border-radius: 8px; font-size: 14px;
+      font-weight: 600; cursor: pointer; border: none;
+      transition: opacity .2s, transform .15s;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-primary { background: var(--indigo); color: #fff; }
+    .btn-outline {
+      background: transparent; color: var(--text);
+      border: 1px solid #444;
+    }
+    .btn-outline:hover { border-color: var(--indigo); color: var(--indigo-lt); }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 100px 5% 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 999px;
+      border: 1px solid rgba(99,102,241,.4);
+      background: rgba(99,102,241,.08);
+      font-size: 13px; color: var(--indigo-lt);
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800; line-height: 1.12;
+      letter-spacing: -1.5px;
+      max-width: 820px; margin: 0 auto 20px;
+    }
+    h1 span { color: var(--indigo-lt); }
+
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text2); max-width: 560px;
+      margin: 0 auto 16px; line-height: 1.7;
+    }
+
+    .disclaimer {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text3);
+      margin-bottom: 48px;
+    }
+    .disclaimer span { color: var(--green); font-weight: 600; }
+
+    /* ── TOOL ── */
+    .tool-wrapper {
+      max-width: 640px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tool-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px;
+    }
+
+    .tool-label {
+      font-size: 13px; font-weight: 600; color: var(--text2);
+      margin-bottom: 10px; display: block;
+    }
+
+    .input-row {
+      display: flex; gap: 12px;
+    }
+
+    .key-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 16px;
+      color: var(--text);
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .key-input::placeholder { color: var(--text3); }
+    .key-input:focus { border-color: var(--indigo); }
+
+    .check-btn {
+      background: var(--indigo);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      white-space: nowrap;
+    }
+    .check-btn:hover { opacity: .88; transform: translateY(-1px); }
+    .check-btn:active { transform: translateY(0); }
+
+    /* ── RESULT ── */
+    #result {
+      margin-top: 28px;
+      display: none;
+    }
+
+    .result-provider {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .result-provider-name {
+      font-size: 20px; font-weight: 700;
+    }
+
+    .risk-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 999px;
+      font-size: 13px; font-weight: 700;
+    }
+    .risk-critical { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+    .risk-high     { background: rgba(249,115,22,.15); color: #f97316; border: 1px solid rgba(249,115,22,.3); }
+    .risk-medium   { background: rgba(234,179,8,.15);  color: #eab308; border: 1px solid rgba(234,179,8,.3); }
+    .risk-low      { background: rgba(34,197,94,.15);  color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+
+    .result-tip {
+      background: var(--bg3);
+      border-left: 3px solid var(--indigo);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    .result-recs {
+      list-style: none;
+      display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 24px;
+    }
+    .result-recs li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 14px; color: var(--text2); line-height: 1.6;
+    }
+    .result-recs li::before { content: '→'; color: var(--indigo-lt); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+    .result-unknown {
+      text-align: center; padding: 24px 0;
+    }
+    .result-unknown .unknown-icon { font-size: 36px; margin-bottom: 12px; }
+    .result-unknown p { color: var(--text2); font-size: 15px; line-height: 1.7; }
+
+    .result-cta {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .result-cta-text { font-size: 14px; color: var(--text2); }
+    .result-cta-text strong { color: var(--text); }
+
+    /* ── SECTIONS ── */
+    section { padding: 80px 5%; }
+    section.alt-bg { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+    .section-label {
+      font-size: 13px; color: var(--indigo-lt); font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h2 {
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 800; line-height: 1.2;
+      letter-spacing: -0.8px; margin-bottom: 16px;
+    }
+    .section-sub { color: var(--text2); font-size: 17px; max-width: 560px; margin-bottom: 48px; line-height: 1.7; }
+
+    /* ── HOW TO USE ── */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;
+      max-width: 800px;
+    }
+    .step-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      transition: border-color .2s, transform .2s;
+    }
+    .step-card:hover { border-color: rgba(99,102,241,.4); transform: translateY(-3px); }
+    .step-num {
+      width: 36px; height: 36px;
+      background: rgba(99,102,241,.12);
+      border: 1px solid rgba(99,102,241,.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: var(--indigo-lt);
+      margin-bottom: 14px;
+    }
+    .step-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .step-desc { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+    /* ── FAQ ── */
+    .faq-list { max-width: 720px; display: flex; flex-direction: column; gap: 2px; }
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .faq-q {
+      width: 100%; text-align: left; background: var(--bg2);
+      border: none; color: var(--text); font-size: 15px; font-weight: 600;
+      padding: 18px 20px; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; line-height: 1.4;
+      transition: background .2s;
+    }
+    .faq-q:hover { background: var(--bg3); }
+    .faq-arrow { color: var(--indigo-lt); font-size: 18px; flex-shrink: 0; transition: transform .25s; }
+    .faq-a {
+      max-height: 0; overflow: hidden;
+      background: var(--bg2);
+      transition: max-height .3s ease, padding .3s ease;
+      font-size: 14px; color: var(--text2); line-height: 1.75;
+      padding: 0 20px;
+    }
+    .faq-item.open .faq-a { max-height: 300px; padding: 0 20px 18px; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+
+    /* ── RELATED ── */
+    .related-section { padding: 64px 5%; border-top: 1px solid var(--border); }
+    .related-section h2 { font-size: 22px; margin-bottom: 24px; }
+    .related-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;
+    }
+    .related-card {
+      display: block; padding: 18px 20px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; transition: border-color .2s;
+      font-size: 14px; color: var(--text2);
+    }
+    .related-card:hover { border-color: var(--indigo); color: var(--text); }
+    .related-card strong { display: block; color: var(--text); margin-bottom: 4px; font-size: 14px; }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      text-align: center;
+      background: linear-gradient(135deg, rgba(99,102,241,.08) 0%, rgba(99,102,241,.02) 100%);
+      border-top: 1px solid rgba(99,102,241,.15);
+      padding: 96px 5%;
+    }
+    .cta-section h2 { max-width: 560px; margin: 0 auto 16px; }
+    .cta-section p { color: var(--text2); max-width: 440px; margin: 0 auto 40px; font-size: 17px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-left { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text2); }
+    .footer-left img { width: 24px; height: 24px; border-radius: 6px; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text3); transition: color .2s; }
+    .footer-links a:hover { color: var(--text2); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 72px 5% 56px; }
+      section { padding: 56px 5%; }
+      footer { flex-direction: column; text-align: center; }
+      .input-row { flex-direction: column; }
+      .check-btn { width: 100%; }
+      .result-cta { flex-direction: column; align-items: flex-start; }
+      .tool-card { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <img src="icon.png" alt="API Locker" />
+    API Locker
+  </a>
+  <div class="nav-links">
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/#faq">FAQ</a>
+  </div>
+  <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/api-locker/kohkgelicahccaemaeoobedmekiafbgk" target="_blank">Install Free</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="badge">Free Tool</div>
+  <h1>API Key <span>Leak Checker</span></h1>
+  <p class="hero-sub">
+    Find out which provider your key belongs to and how risky it is if exposed. Enter only the first 4-6 characters — never your full key.
+  </p>
+  <div class="disclaimer">
+    <span>&#9679;</span> We never store or transmit your key prefix. Everything runs in your browser.
+  </div>
+
+  <!-- TOOL -->
+  <div class="tool-wrapper">
+    <div class="tool-card">
+      <label class="tool-label" for="keyInput">Enter your key prefix (first 4-6 characters)</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="keyInput"
+          class="key-input"
+          placeholder="e.g. sk-, AIza, ghp_"
+          maxlength="20"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button class="check-btn" onclick="checkKey()">Check Key</button>
+      </div>
+
+      <!-- RESULT AREA -->
+      <div id="result">
+        <div id="result-matched">
+          <div class="result-provider">
+            <div class="result-provider-name" id="result-name"></div>
+            <div class="risk-badge" id="result-risk-badge"></div>
+          </div>
+          <div class="result-tip" id="result-tip"></div>
+          <ul class="result-recs" id="result-recs"></ul>
+          <div class="result-cta">
+            <div class="result-cta-text">
+              <strong>Store this key securely</strong> — encrypted, local, one-click access.
+            </div>
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/api-locker/kohkgelicahccaemaeoobedmekiafbgk" target="_blank">
+              Store this key securely →
+            </a>
+          </div>
+        </div>
+
+        <div id="result-unknown" class="result-unknown" style="display:none;">
+          <div class="unknown-icon">🔍</div>
+          <p>
+            <strong style="color:var(--text);">Unknown provider</strong> — still store it safely.<br />
+            We didn't recognise this prefix, but any API key can cause harm if exposed.
+          </p>
+          <div style="margin-top: 20px;" class="result-cta">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/api-locker/kohkgelicahccaemaeoobedmekiafbgk" target="_blank">
+              Store this key securely →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW TO USE ── -->
+<section class="alt-bg">
+  <div style="max-width: 900px; margin: 0 auto;">
+    <div class="section-label">How It Works</div>
+    <h2>Three steps, zero data sent</h2>
+    <p class="section-sub">The check happens entirely in your browser using a local prefix database.</p>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-title">Copy the prefix</div>
+        <div class="step-desc">Look at your API key and copy only the first 4-6 characters — the recognisable prefix like <code style="color:var(--indigo-lt);font-size:13px;">sk-</code>, <code style="color:var(--indigo-lt);font-size:13px;">AIza</code>, or <code style="color:var(--indigo-lt);font-size:13px;">ghp_</code>. Do not paste the full key.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-title">Hit "Check Key"</div>
+        <div class="step-desc">Our JavaScript matches your prefix against 20+ known providers instantly. No network request is made. Your prefix never leaves this tab.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-title">Review the result</div>
+        <div class="step-desc">See which provider issued the key, the exposure risk level (Critical / High / Medium / Low), a provider-specific tip, and a recommended action plan.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section>
+  <div style="max-width: 900px; margin: 0 auto;">
+    <div class="section-label">FAQ</div>
+    <h2>Common questions about API key security</h2>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Is it safe to enter my API key prefix here?
+          <span class="faq-arrow">&#8964;</span>
+        </button>
+        <div class="faq-a">
+          Yes. This tool runs entirely in your browser — no data is sent to any server. We only ask for the first 4-6 characters (the public prefix), which is not enough for anyone to use your key. The prefix just tells us which provider issued it.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What does the risk level mean?
+          <span class="faq-arrow">&#8964;</span>
+        </button>
+        <div class="faq-a">
+          Risk level reflects how severe the consequences would be if this key were exposed publicly. <strong style="color:#ef4444;">Critical</strong> means real money or repository access is at stake (AWS, Stripe Live, GitHub). <strong style="color:#f97316;">High</strong> means a third-party can rack up API charges or send messages on your behalf. <strong style="color:#eab308;">Medium</strong> means limited blast radius with proper scoping. <strong style="color:#22c55e;">Low</strong> means test/sandbox keys with no real-world impact.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What should I do if my API key has been exposed?
+          <span class="faq-arrow">&#8964;</span>
+        </button>
+        <div class="faq-a">
+          Revoke it immediately from the provider dashboard, then generate a new one. If it was committed to a public Git repository, assume it has already been scraped — bots scan GitHub in real time. Check your provider's usage logs for any unauthorized calls, and report suspicious activity to the provider.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Where should I store my API keys safely?
+          <span class="faq-arrow">&#8964;</span>
+        </button>
+        <div class="faq-a">
+          For personal use: an encrypted vault like API Locker (browser extension, AES-256-GCM, local-first). For production apps: environment variables injected at runtime via your CI/CD platform, or a secrets manager like AWS Secrets Manager or HashiCorp Vault. Never hardcode keys in source code or store them in unencrypted text files.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── RELATED GUIDES ── -->
+<div class="related-section">
+  <h2>Related Guides</h2>
+  <div class="related-grid">
+    <a class="related-card" href="/api-key-manager.html">
+      <strong>API Key Manager</strong>
+      What is an API key manager and why every developer needs one
+    </a>
+    <a class="related-card" href="/api-key-security-best-practices.html">
+      <strong>API Key Security Best Practices</strong>
+      12 proven practices to keep your API keys safe from exposure
+    </a>
+    <a class="related-card" href="/how-to-store-api-keys-securely.html">
+      <strong>How to Store API Keys Securely</strong>
+      Step-by-step guide comparing storage methods for every use case
+    </a>
+    <a class="related-card" href="/api-key-management-tools.html">
+      <strong>API Key Management Tools Compared</strong>
+      Side-by-side comparison of all your options
+    </a>
+    <a class="related-card" href="/api-key-storage-best-practices.html">
+      <strong>API Key Storage Best Practices</strong>
+      Where to store keys — and where never to store them
+    </a>
+    <a class="related-card" href="/api-key-manager-chrome-extension.html">
+      <strong>API Key Manager Chrome Extension</strong>
+      How browser-based key management works
+    </a>
+  </div>
+</div>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <div class="badge">Free on Chrome Web Store</div>
+  <h2>Now store that key somewhere safe.</h2>
+  <p>API Locker encrypts every key with AES-256-GCM and keeps them one click away — without ever sending them to a server.</p>
+  <a class="btn btn-primary btn-lg" href="https://chromewebstore.google.com/detail/api-locker/kohkgelicahccaemaeoobedmekiafbgk" target="_blank">Add to Chrome — Free</a>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-left">
+    <img src="icon.png" alt="API Locker" />
+    <span>© 2025 <a href="/" style="color:var(--text2);">apilocker.dev</a></span>
+  </div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+  </div>
+</footer>
+
+<script>
+  // ── PROVIDER DATABASE ──
+  const PROVIDERS = [
+    { name: 'OpenAI', prefix: 'sk-', risk: 'high', tip: 'OpenAI keys grant access to paid API usage. Never expose in client-side code.' },
+    { name: 'Anthropic', prefix: 'sk-ant-', risk: 'high', tip: 'Anthropic Claude API keys. Treat like a password.' },
+    { name: 'Google AI / Gemini', prefix: 'AIza', risk: 'high', tip: 'Google AI Studio keys. Restrict to specific APIs and IPs in Google Cloud Console.' },
+    { name: 'Groq', prefix: 'gsk_', risk: 'high', tip: 'Groq API key. Rotate every 90 days.' },
+    { name: 'Hugging Face', prefix: 'hf_', risk: 'medium', tip: 'Hugging Face token. Use fine-grained tokens with read-only access where possible.' },
+    { name: 'Replicate', prefix: 'r8_', risk: 'high', tip: 'Replicate API key. Each call costs money — never expose publicly.' },
+    { name: 'Perplexity', prefix: 'pplx-', risk: 'high', tip: 'Perplexity API key. Store in encrypted vault.' },
+    { name: 'Stripe (Live)', prefix: 'sk_live_', risk: 'critical', tip: 'LIVE Stripe key — has access to real money! Revoke immediately if exposed.' },
+    { name: 'Stripe (Test)', prefix: 'sk_test_', risk: 'low', tip: 'Stripe test key. No real money, but still keep it private.' },
+    { name: 'GitHub', prefix: 'ghp_', risk: 'critical', tip: 'GitHub Personal Access Token. Can access/modify your repositories. Treat as a password.' },
+    { name: 'GitHub (Fine-grained)', prefix: 'github_pat_', risk: 'high', tip: 'GitHub fine-grained PAT. Better than classic tokens — scope it to minimum permissions.' },
+    { name: 'GitLab', prefix: 'glpat-', risk: 'high', tip: 'GitLab Personal Access Token. Can access repositories and CI/CD pipelines.' },
+    { name: 'AWS Access Key', prefix: 'AKIA', risk: 'critical', tip: 'AWS Access Key ID. Exposed AWS keys are the #1 cause of cloud billing nightmares. Revoke immediately.' },
+    { name: 'Twilio', prefix: 'AC', risk: 'high', tip: 'Twilio Account SID. Paired with Auth Token, gives full account access.' },
+    { name: 'SendGrid', prefix: 'SG.', risk: 'high', tip: 'SendGrid API key. Can send emails from your domain — could be used for spam/phishing.' },
+    { name: 'Resend', prefix: 're_', risk: 'medium', tip: 'Resend API key. Restrict permissions to sending only.' },
+    { name: 'Slack Bot', prefix: 'xoxb-', risk: 'high', tip: 'Slack Bot Token. Can read messages and act as your bot. Never commit to code.' },
+    { name: 'Mapbox', prefix: 'pk.ey', risk: 'medium', tip: 'Mapbox public token. Restrict to specific URLs in Mapbox dashboard.' },
+    { name: 'Notion', prefix: 'secret_', risk: 'medium', tip: 'Notion integration secret. Has access to connected workspace pages.' },
+    { name: 'Notion (new)', prefix: 'ntn_', risk: 'medium', tip: 'Notion API key. Restrict to minimum required pages.' },
+    { name: 'Airtable', prefix: 'pat', risk: 'medium', tip: 'Airtable Personal Access Token. Use fine-grained scopes.' },
+  ];
+
+  // Sort longest prefix first so 'sk-ant-' matches before 'sk-'
+  PROVIDERS.sort((a, b) => b.prefix.length - a.prefix.length);
+
+  const RISK_CONFIG = {
+    critical: { label: 'Critical',  icon: '🔴', cls: 'risk-critical' },
+    high:     { label: 'High',      icon: '🟠', cls: 'risk-high' },
+    medium:   { label: 'Medium',    icon: '🟡', cls: 'risk-medium' },
+    low:      { label: 'Low',       icon: '🟢', cls: 'risk-low' },
+  };
+
+  const RECS_BY_RISK = {
+    critical: [
+      'Revoke this key immediately if it has been exposed anywhere.',
+      'Check your provider\'s usage / billing logs for unauthorized activity.',
+      'Generate a new key with the minimum required permissions.',
+      'Store the new key in an encrypted vault — never in source code or chat.',
+    ],
+    high: [
+      'Rotate this key every 60–90 days as a standard practice.',
+      'Never embed it in frontend code or commit it to a public repository.',
+      'Use environment variables in your CI/CD pipeline for server-side access.',
+      'Store your master copy in an encrypted vault like API Locker.',
+    ],
+    medium: [
+      'Scope this key to the minimum required permissions.',
+      'Avoid sharing it in chat messages or emails — use a secrets manager instead.',
+      'Set an expiry date and review it regularly.',
+      'Store it in an encrypted vault rather than a text file or .env committed to git.',
+    ],
+    low: [
+      'Even test keys should be kept private to avoid confusion and accidental exposure.',
+      'Don\'t reuse test keys across projects — keep them isolated.',
+      'Store all keys, even low-risk ones, in an encrypted vault for good habits.',
+    ],
+  };
+
+  function checkKey() {
+    const raw = document.getElementById('keyInput').value.trim();
+    const resultEl = document.getElementById('result');
+    const matchedEl = document.getElementById('result-matched');
+    const unknownEl = document.getElementById('result-unknown');
+
+    if (!raw) {
+      document.getElementById('keyInput').focus();
+      return;
+    }
+
+    // Find first matching provider (sorted by prefix length desc)
+    const match = PROVIDERS.find(p => raw.toLowerCase().startsWith(p.prefix.toLowerCase()) || raw.startsWith(p.prefix));
+
+    resultEl.style.display = 'block';
+
+    if (match) {
+      unknownEl.style.display = 'none';
+      matchedEl.style.display = 'block';
+
+      const rc = RISK_CONFIG[match.risk];
+
+      document.getElementById('result-name').textContent = match.name;
+
+      const badge = document.getElementById('result-risk-badge');
+      badge.textContent = rc.icon + ' ' + rc.label + ' Risk';
+      badge.className = 'risk-badge ' + rc.cls;
+
+      document.getElementById('result-tip').textContent = match.tip;
+
+      const recsList = document.getElementById('result-recs');
+      recsList.innerHTML = '';
+      (RECS_BY_RISK[match.risk] || []).forEach(rec => {
+        const li = document.createElement('li');
+        li.textContent = rec;
+        recsList.appendChild(li);
+      });
+
+      // GA event
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'key_checked', { provider: match.name, risk: match.risk });
+      }
+    } else {
+      matchedEl.style.display = 'none';
+      unknownEl.style.display = 'block';
+
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'key_checked', { provider: 'unknown', risk: 'unknown' });
+      }
+    }
+
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Allow Enter key to trigger check
+  document.getElementById('keyInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkKey();
+  });
+
+  // ── FAQ ACCORDION ──
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+</script>
+
+</body>
+</html>
