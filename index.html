@@ -15,6 +15,64 @@
     gtag('config', 'G-8G5WKVX81T');
   </script>
 
+  <!-- FAQ Schema Markup for AEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I securely store API keys in Chrome?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The safest way to store API keys in Chrome is with a dedicated encrypted extension like API Locker. It encrypts every key with AES-256-GCM using a master password that never leaves your device. Avoid storing API keys in plain text files, browser notes, or unencrypted password managers."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What happens if I forget my master password?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "API Locker is zero-knowledge — your master password is never sent anywhere and there is no recovery mechanism by design. If you forget your master password, your encrypted vault cannot be decrypted. Write your master password down and store it somewhere safe."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Are my API keys sent to the cloud?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Only if you enable cloud sync (Pro feature). Even then, only AES-256-GCM encrypted blobs are sent — the server never sees your plaintext keys or master password. The free plan stores everything locally on your device only."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is API Locker different from a regular password manager?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Password managers are built for website logins. API Locker is purpose-built for developers: it detects which API dashboard you're visiting and surfaces the right key automatically, supports 32+ providers, handles multiple keys per provider with labels, and warns you before keys expire."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use API Locker across multiple devices?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, with the Pro plan. Cloud sync keeps your encrypted vault in sync across all your Chrome installations. Your keys are encrypted with your master password before leaving your device, so syncing is completely safe."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which API providers does API Locker support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "API Locker supports 32+ providers including OpenAI, Anthropic, Stripe, GitHub, AWS, Google Cloud, Twilio, SendGrid, Hugging Face, Replicate, and many more. You can also add any custom provider manually."
+        }
+      }
+    ]
+  }
+  </script>
+
   <!-- Favicon placeholder -->
   <link rel="icon" href="icon.png" type="image/png" />
 
@@ -703,6 +761,51 @@ function setBilling(type) {
   }
 }
 </script>
+
+<!-- ── FAQ ────────────────────────────────────────────────────────────── -->
+<section id="faq" style="max-width:780px;margin:0 auto;padding:80px 24px;">
+  <div class="section-label">FAQ</div>
+  <h2 style="text-align:center;margin-bottom:48px;">Common Questions</h2>
+
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">How do I securely store API keys in Chrome?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">The safest way to store API keys in Chrome is with a dedicated encrypted extension like API Locker. It encrypts every key with AES-256-GCM using a master password that never leaves your device. Avoid storing API keys in plain text files, browser notes, or unencrypted password managers that treat keys as plain passwords.</p>
+    </details>
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">What happens if I forget my master password?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">API Locker is zero-knowledge — your master password is never sent anywhere and there is no recovery mechanism by design. If you forget your master password, your encrypted vault cannot be decrypted. This is a feature, not a bug: it means no third party, including us, can ever access your keys. Write your master password down and store it somewhere safe.</p>
+    </details>
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">Are my API keys sent to the cloud?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">Only if you enable cloud sync (Pro feature). Even then, only AES-256-GCM encrypted blobs are sent — the server never sees your plaintext keys or master password. The free plan stores everything locally on your device only.</p>
+    </details>
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">How is API Locker different from a regular password manager?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">Password managers are built for website logins. API Locker is purpose-built for developers: it detects which API dashboard you're visiting and surfaces the right key automatically, supports 32+ providers with their logos, handles multiple keys per provider with labels like "Production" and "Development", and warns you before keys expire.</p>
+    </details>
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">What is smart site detection?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">When you visit a supported API dashboard (like platform.openai.com or dashboard.stripe.com), API Locker automatically shows only the relevant keys for that provider. No searching, no scrolling — the right key appears the moment you need it.</p>
+    </details>
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">Can I use API Locker across multiple devices?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">Yes, with the Pro plan. Cloud sync keeps your encrypted vault in sync across all your Chrome installations. Your keys are encrypted with your master password before leaving your device, so syncing is completely safe.</p>
+    </details>
+
+    <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <summary style="font-weight:600;font-size:16px;cursor:pointer;list-style:none;">Which API providers does API Locker support?</summary>
+      <p style="margin-top:12px;color:var(--text2);line-height:1.7;">API Locker supports 32+ providers out of the box including OpenAI, Anthropic, Stripe, GitHub, AWS, Google Cloud, Twilio, SendGrid, Hugging Face, Replicate, and many more. You can also add any custom provider manually.</p>
+    </details>
+
+  </div>
+</section>
 
 <!-- ── INSTALL CTA ─────────────────────────────────────────────────────── -->
 <section id="waitlist" class="waitlist-section">
