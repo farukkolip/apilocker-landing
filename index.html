@@ -477,9 +477,6 @@
     </a>
   </div>
 
-  <a href="/check.html" style="display:inline-flex;align-items:center;gap:8px;margin-top:20px;background:#111;border:1px solid #2a2a2a;border-radius:20px;padding:8px 18px;text-decoration:none;color:#a5b4fc;font-size:13px;font-weight:500;transition:border-color .2s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#2a2a2a'">
-    🔍 Free Tool: API Key Leak Checker — identify your key's provider & risk →
-  </a>
 
   <!-- Browser + popup mockup -->
   <div class="browser-mockup">
@@ -530,6 +527,81 @@
 </div>
 
 <!-- ── FEATURES ─────────────────────────────────────────────────────────── -->
+<!-- ── LEAK CHECKER CTA ───────────────────────────────────────────────────── -->
+<section style="background:#0a0a0a;border-top:1px solid #1e1e1e;border-bottom:1px solid #1e1e1e;padding:56px 24px;text-align:center;">
+  <div style="max-width:640px;margin:0 auto;">
+    <div style="display:inline-block;background:#6366f115;border:1px solid #6366f140;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;color:#a5b4fc;letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px;">🔍 Free Tool</div>
+    <h2 style="font-size:clamp(22px,4vw,32px);font-weight:700;color:#fff;margin-bottom:12px;line-height:1.25;">API Key Leak Checker</h2>
+    <p style="color:#888;font-size:15px;margin-bottom:28px;line-height:1.6;">Find out which provider your key belongs to and how risky it is if exposed.<br>Enter only the first 4–6 characters — never your full key.</p>
+    <div style="display:flex;gap:10px;max-width:480px;margin:0 auto 16px;">
+      <input id="hero-check-input" type="text" maxlength="12" placeholder="e.g. sk-, AIza, ghp_"
+        style="flex:1;background:#111;border:1px solid #333;border-radius:10px;padding:13px 16px;color:#fff;font-size:15px;outline:none;font-family:monospace;"
+        onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#333'">
+      <button id="hero-check-btn" onclick="heroCheck()"
+        style="background:#6366f1;border:none;color:#fff;border-radius:10px;padding:13px 24px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        Check Key
+      </button>
+    </div>
+    <div id="hero-check-result" style="display:none;background:#111;border:1px solid #222;border-radius:12px;padding:16px 20px;max-width:480px;margin:0 auto 16px;text-align:left;"></div>
+    <p style="color:#555;font-size:12px;">
+      <span style="color:#22c55e;">●</span> We never store or transmit your key prefix. Everything runs in your browser.
+    </p>
+  </div>
+</section>
+
+<script>
+const HERO_PROVIDERS = [
+  { name: 'Anthropic', prefix: 'sk-ant-', risk: 'high', color: '#f97316' },
+  { name: 'OpenAI', prefix: 'sk-', risk: 'high', color: '#f97316' },
+  { name: 'Google AI / Gemini', prefix: 'AIza', risk: 'high', color: '#f97316' },
+  { name: 'Groq', prefix: 'gsk_', risk: 'high', color: '#f97316' },
+  { name: 'AWS Access Key', prefix: 'AKIA', risk: 'critical', color: '#ef4444' },
+  { name: 'Stripe (Live)', prefix: 'sk_live_', risk: 'critical', color: '#ef4444' },
+  { name: 'Stripe (Test)', prefix: 'sk_test_', risk: 'low', color: '#22c55e' },
+  { name: 'GitHub', prefix: 'ghp_', risk: 'critical', color: '#ef4444' },
+  { name: 'GitHub (Fine-grained)', prefix: 'github_pat_', risk: 'high', color: '#f97316' },
+  { name: 'GitLab', prefix: 'glpat-', risk: 'high', color: '#f97316' },
+  { name: 'Hugging Face', prefix: 'hf_', risk: 'medium', color: '#eab308' },
+  { name: 'Replicate', prefix: 'r8_', risk: 'high', color: '#f97316' },
+  { name: 'Perplexity', prefix: 'pplx-', risk: 'high', color: '#f97316' },
+  { name: 'SendGrid', prefix: 'SG.', risk: 'high', color: '#f97316' },
+  { name: 'Resend', prefix: 're_', risk: 'medium', color: '#eab308' },
+  { name: 'Slack Bot', prefix: 'xoxb-', risk: 'high', color: '#f97316' },
+  { name: 'Mapbox', prefix: 'pk.ey', risk: 'medium', color: '#eab308' },
+  { name: 'Notion', prefix: 'secret_', risk: 'medium', color: '#eab308' },
+  { name: 'Notion (new)', prefix: 'ntn_', risk: 'medium', color: '#eab308' },
+  { name: 'Airtable', prefix: 'pat', risk: 'medium', color: '#eab308' },
+];
+const riskLabels = { critical: '🔴 Critical', high: '🟠 High', medium: '🟡 Medium', low: '🟢 Low' };
+
+function heroCheck() {
+  const input = document.getElementById('hero-check-input').value.trim();
+  const result = document.getElementById('hero-check-result');
+  if (!input) return;
+  const sorted = [...HERO_PROVIDERS].sort((a,b) => b.prefix.length - a.prefix.length);
+  const match = sorted.find(p => input.startsWith(p.prefix) || p.prefix.startsWith(input));
+  if (match) {
+    result.style.display = 'block';
+    result.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-weight:700;color:#fff;font-size:15px;">${match.name}</span>
+        <span style="background:${match.color}20;color:${match.color};border:1px solid ${match.color}40;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:700;">${riskLabels[match.risk]}</span>
+      </div>
+      <p style="color:#888;font-size:13px;margin:0 0 12px;">Store this key securely before it ends up in the wrong hands.</p>
+      <a href="https://chromewebstore.google.com/detail/api-locker/bboonagjhicfibepbielmaiphgchhpeb" target="_blank"
+        style="display:inline-block;background:#6366f1;color:#fff;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;text-decoration:none;">
+        🔐 Secure it with API Locker — Free
+      </a>
+      <a href="/check.html" style="display:inline-block;margin-left:10px;color:#6366f1;font-size:13px;text-decoration:none;">Full analysis →</a>
+    `;
+  } else {
+    result.style.display = 'block';
+    result.innerHTML = `<span style="color:#888;font-size:14px;">Unknown provider — <a href="/check.html" style="color:#6366f1;">see full analysis →</a></span>`;
+  }
+}
+document.getElementById('hero-check-input').addEventListener('keydown', e => { if (e.key === 'Enter') heroCheck(); });
+</script>
+
 <section id="features">
   <div class="section-label">Features</div>
   <h2>Everything you need,<br />nothing you don't</h2>
